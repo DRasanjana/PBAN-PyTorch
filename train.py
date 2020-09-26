@@ -4,8 +4,8 @@ import torch.nn as nn
 import argparse
 from sklearn import metrics
 from torch.utils.data import DataLoader
-from models import LSTM, AE_LSTM, ATAE_LSTM, PBAN
-from data_utils import SentenceDataset, build_tokenizer, build_embedding_matrix
+from models import LSTM, AE_LSTM, ATAE_LSTM, PBAN, IAN
+from data import SentenceDataset, build_tokenizer, build_embedding_matrix
 
 
 class Instructor:
@@ -69,7 +69,6 @@ class Instructor:
                 inputs = [sample_batched[col].to(self.opt.device) for col in self.opt.inputs_cols]
                 outputs = self.model(inputs)
                 targets = sample_batched['polarity'].to(self.opt.device)
-
                 loss = criterion(outputs, targets)
                 loss.backward()
                 optimizer.step()
@@ -138,14 +137,20 @@ def main():
     model_classes = {
         'lstm': LSTM,
         'ae_lstm': AE_LSTM,
+        'ian': IAN,
         'atae_lstm': ATAE_LSTM,
-        'pban': PBAN
+        'pban': PBAN,
+
     }
 
     dataset_files = {
         'restaurant': {
             'train': './datasets/Restaurants_Train.xml',
             'test': './datasets/Restaurants_Test.xml'
+        },
+        'law': {
+            'train': './datasets/train.csv',
+            'test': './datasets/test.csv'
         },
         'laptop': {
             'train': './datasets/Laptops_Train.xml',
@@ -157,7 +162,8 @@ def main():
         'lstm': ['text'],
         'ae_lstm': ['text', 'aspect'],
         'atae_lstm': ['text', 'aspect'],
-        'pban': ['text', 'aspect', 'position']
+        'pban': ['text', 'aspect', 'position'],
+        'ian': ['text', 'aspect']
     }
 
     initializers = {
@@ -178,8 +184,8 @@ def main():
 
     # Hyperparameters
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_name', default='pban', type=str, help=', '.join(model_classes.keys()))
-    parser.add_argument('--dataset', default='restaurant', type=str, help=', '.join(dataset_files.keys()))
+    parser.add_argument('--model_name', default='ian', type=str, help=', '.join(model_classes.keys()))
+    parser.add_argument('--dataset', default='law', type=str, help=', '.join(dataset_files.keys()))
     parser.add_argument('--optimizer', default='adam', type=str, help=', '.join(optimizers.keys()))
     parser.add_argument('--initializer', default='xavier_uniform_', type=str, help=', '.join(initializers.keys()))
     parser.add_argument('--learning_rate', default=1e-3, type=float)
@@ -197,6 +203,7 @@ def main():
     parser.add_argument('--repeats', default=1, type=int)
     opt = parser.parse_args()
 
+
     opt.model_class = model_classes[opt.model_name]
     opt.dataset_file = dataset_files[opt.dataset]
     opt.inputs_cols = input_colses[opt.model_name]
@@ -211,3 +218,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
