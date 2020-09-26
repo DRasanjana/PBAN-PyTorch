@@ -69,6 +69,7 @@ class Instructor:
                 inputs = [sample_batched[col].to(self.opt.device) for col in self.opt.inputs_cols]
                 outputs = self.model(inputs)
                 targets = sample_batched['polarity'].to(self.opt.device)
+
                 loss = criterion(outputs, targets)
                 loss.backward()
                 optimizer.step()
@@ -146,10 +147,6 @@ def main():
             'train': './datasets/Restaurants_Train.xml',
             'test': './datasets/Restaurants_Test.xml'
         },
-        'law': {
-            'train': './datasets/train.csv',
-            'test': './datasets/test.csv'
-        },
         'laptop': {
             'train': './datasets/Laptops_Train.xml',
             'test': './datasets/Laptops_Test.xml'
@@ -182,7 +179,7 @@ def main():
     # Hyperparameters
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_name', default='pban', type=str, help=', '.join(model_classes.keys()))
-    parser.add_argument('--dataset', default='law', type=str, help=', '.join(dataset_files.keys()))
+    parser.add_argument('--dataset', default='restaurant', type=str, help=', '.join(dataset_files.keys()))
     parser.add_argument('--optimizer', default='adam', type=str, help=', '.join(optimizers.keys()))
     parser.add_argument('--initializer', default='xavier_uniform_', type=str, help=', '.join(initializers.keys()))
     parser.add_argument('--learning_rate', default=1e-3, type=float)
@@ -198,8 +195,7 @@ def main():
     parser.add_argument('--max_length', default=80, type=int)
     parser.add_argument('--device', default=None, type=str, help='cpu, cuda')
     parser.add_argument('--repeats', default=1, type=int)
-    opt = parser.parse_args(['--model_name', 'pban'])
-
+    opt = parser.parse_args()
 
     opt.model_class = model_classes[opt.model_name]
     opt.dataset_file = dataset_files[opt.dataset]
@@ -215,4 +211,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
