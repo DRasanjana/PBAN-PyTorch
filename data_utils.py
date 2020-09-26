@@ -30,6 +30,27 @@ def parseXML1(data_path):
             objs.append(obj)
     return objs
 
+def get__whichtarget(targets_num,max_target_num,):
+    '''
+    :param target_num: a one dimension array:[1,2,2,1,...]
+    :param max_target_num: max_target_num is 13 in Res data
+    :return: which_one  ,shape = [?,max_target_num]:[[1,0,0,0,...],
+                                                     [1,0,0,0,...],
+                                                     [0,1,0,0,...],
+                                                     [1,0,0,0,...],
+                                                     ...]
+    '''
+    which_one = np.zeros((targets_num.shape[0], max_target_num))
+    #补上位置信息，如果是3，那就补上[1,0,0][0,1,0][0,0,1]
+    #做法：根据每个的数字，循环得到对于位置,当然序号加上该值
+    i = 0
+    while i <targets_num.shape[0]:
+        for j in range(targets_num[i]):
+            which_one[i,j] = 1
+            i += 1
+    return which_one
+
+
 
 def parseXML(data_path):
     with open(data_path, 'r', encoding="utf8") as csvfile:
@@ -68,6 +89,7 @@ def parseXML(data_path):
     # find the same targets
     all_sentence = [s for s in x_text]
     targets_nums = [all_sentence.count(s) for s in all_sentence]
+
     # ccc_num= [ccc.count(s) for s in ccc]
     # for i in range(len(ccc_num)):
     #     if ccc_num[i]>1:
@@ -82,7 +104,8 @@ def parseXML(data_path):
     #             print(targets_nums[i+j])
     #             print(i+j-1)
     #     i=i+j+1
-
+    targets_numbers = np.array(targets_nums)
+    train_target_whichone = get__whichtarget(targets_numbers, 8)
     objs = []
     i = 0
     while i < len(all_sentence):
@@ -231,6 +254,11 @@ class SentenceDataset(Dataset):
         # polarity_dict = {'positive':0, 'negative':1, 'neutral':2}
         for obj in parseXML(fname):
             text = tokenizer.text_to_sequence(obj['text'])
+            targets=[]
+            for aspect in obj['aspects']:
+                asg =aspect['term']
+                targets.append(tokenizer.text_to_sequence(aspect['term']))
+
             for aspect in obj['aspects']:
                 if target_dim == 2 and aspect['polarity'] == 'neutral':
                     continue
@@ -238,7 +266,7 @@ class SentenceDataset(Dataset):
                 position = tokenizer.position_sequence(obj['text'], int(aspect['from']), int(aspect['to']))
                 # polarity = polarity_dict[aspect['polarity']]
                 polarity = aspect['polarity']
-                data.append({'text': text, 'aspect': aspect_term, 'position': position, 'polarity': polarity})
+                data.append({'text': text, 'aspect': aspect_term, 'position': position, 'polarity': polarity , 'aspects':targets})
         self._data = data
 
     def __getitem__(self, index):
@@ -246,6 +274,27 @@ class SentenceDataset(Dataset):
 
     def __len__(self):
         return len(self._data)
+
+    def get__whichtarget(self,targets_num, max_target_num ):
+            '''
+            :param target_num: a one dimension array:[1,2,2,1,...]
+            :param max_target_num: max_target_num is 13 in Res data
+            :return: which_one  ,shape = [?,max_target_num]:[[1,0,0,0,...],
+                                                             [1,0,0,0,...],
+                                                             [0,1,0,0,...],
+                                                             [1,0,0,0,...],
+                                                             ...]
+            '''
+            which_one = np.zeros((targets_num.shape[0], max_target_num))
+            # 补上位置信息，如果是3，那就补上[1,0,0][0,1,0][0,0,1]
+            # 做法：根据每个的数字，循环得到对于位置,当然序号加上该值
+            i = 0
+            while i < targets_num.shape[0]:
+                for j in range(targets_num[i]):
+                    which_one[i, j] = 1
+                    i += 1
+            return which_one
+
 
 
 def _load_wordvec(data_path, vocab=None):
